@@ -93,7 +93,7 @@ print('Science Model Test Score:', ScienceScore[0])
 print('Science Model Test Accuracy:', ScienceScore[1])
 
 # Saving the trained Science Neural Net 
-# ScienceModel.save('Science_NN.h5')
+ScienceModel.save('Science_NN.h5')
 
 ### Training and testing the Cost Neural Net
 print('Building Cost Model....')
@@ -123,4 +123,4 @@ print('Cost Model Test Score:', CostScore[0])
 print('Cost Model Test Accuracy:', CostScore[1])
 
 # Saving the trained Cost Neural Net 
-# CostModel.save('Cost_NN.h5')
+CostModel.save('Cost_NN.h5')

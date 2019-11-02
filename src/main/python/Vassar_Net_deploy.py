@@ -4,13 +4,32 @@
 @author: roshan94
 """
 from keras.models import load_model
-#from keras.models import Model
+import numpy as np # only needed for testing
 
-# Loading the trained Science and Cost Models from the h5 files
-ScienceModel = load_model('Science_NN.h5')
-CostModel = load_model('Cost_NN.h5')
+# arch_listbool = ""
 
-arch = ""
+def NeuralNetScienceAndCost (arch_listbool):
 
-science = ScienceModel.predict(arch, verbose=1)
-cost = CostModel.predict(arch, verbose=1)
+    # Loading the trained Science and Cost Models from the h5 files
+    ScienceModel = load_model('Science_NN.h5')
+    CostModel = load_model('Cost_NN.h5')
+
+    #print(arch_listbool)
+    np_list = np.array(arch_listbool)
+    np_list= np_list.reshape((1,60))
+
+    science = ScienceModel.predict(np_list, verbose=0)
+    cost = CostModel.predict(np_list, verbose=0)
+    
+    return arch_listbool, science, cost
+
+# Testing
+# arch_test = "111100001100011100000000011100000011100011000000000000000011"
+
+# archArray_test = np.zeros([1,60])
+# for y in range(60):
+    # archArray_test[0][y] = int(arch_test[y])
+
+# scores = NeuralNetScienceAndCost(archArray_test)
+# print(scores)
+
