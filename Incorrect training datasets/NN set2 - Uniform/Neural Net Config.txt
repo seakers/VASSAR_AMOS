@@ -1,0 +1,13 @@
+NEURAL NET CONFIGURATIONS:
+
+1. SCIENCE NEURAL NET:
+No. of hidden layers: 1
+No. of Neurons in each hidden layer: 50
+No. of epochs to train: 60
+Dropout: 0.3
+
+2. COST NEURAL NET:
+No. of hidden layers: 1
+No. of Neurons in each hidden layer: 50
+No. of epochs to train: 60
+Dropout: 0.3
