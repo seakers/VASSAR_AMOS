@@ -6,30 +6,49 @@
 
 import csv
 import numpy as np
-# import keras
 from keras.models import Sequential 
 from keras.layers import Dense, Dropout, Activation
-# from keras.models import load_model
 import matplotlib.pyplot as plt
 
-### Read data from vassar_data_10000.csv and store into different arrays 
-with open('C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\vassar_data_10000.csv',newline='')as csvfile:
-    data = [row for row in csv.reader(csvfile)]
-    archs = ["" for x in range(len(data))]
-    science = ["" for x in range(len(data))]
-    cost = ["" for x in range(len(data))]
-    for x in range(len(data)):
-        archs[x] = data[x][0]
-        science[x] = data[x][1]
-        cost[x] = data[x][2]
+### Set which Neural Net to train
+### 'LowInstr' - trains the Neural Net pertaining to lower instrument count architectures
+### 'MedInstr' - trains the Neural Net pertaining to uniformly distributed instument architectures
+ArchSampleType = 'MedInstr'
+
+def read_csv(ArchSampleType):
+    if (ArchSampleType=='MedInstr'):
+        ### Read data from vassar_data_uniform_10000.csv and store into different arrays 
+        with open('C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\vassar_data_medinstr_train.csv',newline='')as csvfile:
+            data = [row for row in csv.reader(csvfile)]
+            architectures = ["" for x in range(len(data))]
+            science_vals = ["" for x in range(len(data))]
+            cost_vals = ["" for x in range(len(data))]
+            for x in range(len(data)):
+                architectures[x] = data[x][0]
+                science_vals[x] = data[x][1]
+                cost_vals[x] = data[x][2]
+    elif (ArchSampleType=='LowInstr'):
+        ### Read data from vassar_data_lessarchs_10000.csv and store into different arrays 
+        with open('C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\vassar_data_lowinstr_train.csv',newline='')as csvfile:
+            data = [row for row in csv.reader(csvfile)]
+            architectures = ["" for x in range(len(data))]
+            science_vals = ["" for x in range(len(data))]
+            cost_vals = ["" for x in range(len(data))]
+            for x in range(len(data)):
+                architectures[x] = data[x][0]
+                science_vals[x] = data[x][1]
+                cost_vals[x] = data[x][2]
+    return architectures, science_vals, cost_vals
+                
+archs, science, cost = read_csv(ArchSampleType)
 
 ### Print 100-th row for sanity check
 # print(archs[100], " = ", science[100], " and ", cost[100])
 
 ### Defining Neural Net training parameters
 batch_size = 128
-num_epochs_science = 150
-num_epochs_cost = 200
+num_epochs_science = 50
+num_epochs_cost = 100
 
 ### Separate data into training and testing datasets        
 num_data = len(archs)-1
@@ -58,6 +77,7 @@ for x in range(len(archs_train)):
     science_train[x] = float(science_train[x])
     cost_train[x] = float(cost_train[x])
 
+#print(archArray_train[0,:])
 for x in range(len(archs_test)):
     current_arch = archs_test[x]
     for y in range(60):
@@ -65,15 +85,19 @@ for x in range(len(archs_test)):
     science_test[x] = float(science_test[x])
     cost_test[x] = float(cost_test[x])
 
+
 ### Training and testing the Science Neural Net
 print('Building Science Model....')
 ScienceModel = Sequential()
-ScienceModel.add(Dense(300, input_dim=60))
+ScienceModel.add(Dense(100, input_dim=60))
 ScienceModel.add(Activation('relu'))
-ScienceModel.add(Dropout(0.1))
-#ScienceModel.add(Dense(500))
-#ScienceModel.add(Activation('relu'))
-#ScienceModel.add(Dropout(0.1))
+ScienceModel.add(Dropout(0.3))
+ScienceModel.add(Dense(50))
+ScienceModel.add(Activation('relu'))
+ScienceModel.add(Dropout(0.3))
+ScienceModel.add(Dense(25))
+ScienceModel.add(Activation('relu'))
+ScienceModel.add(Dropout(0.3))
 ScienceModel.add(Dense(1))
 
 ScienceModel.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse'])
@@ -82,28 +106,41 @@ ScienceHistory = ScienceModel.fit(archArray_train, science_train, batch_size=bat
 
 ScienceScore = ScienceModel.evaluate(archArray_test, science_test, batch_size=batch_size)
 
+ScienceTrainScore = ScienceModel.evaluate(archArray_train, science_train, batch_size=batch_size)
+
 plt.figure(1)
-plt.plot(ScienceHistory.history['mse'])
+plt.plot(ScienceHistory.history['mse'], label='train')
+plt.plot(ScienceHistory.history['val_mse'], label='val')
 plt.xlabel('Epoch')
-plt.ylabel('Mean_squared_error')
-plt.title('Mean_Squared_Error for Science Neural Net Training')
+plt.ylabel('Mean Squared Error')
+plt.title('Mean Squared Error for Science Neural Net Training')
+plt.legend(loc='upper right')
 plt.show()
 
-print('Science Model Test Score:', ScienceScore[0])
-print('Science Model Test Accuracy:', ScienceScore[1])
+print('Science Model Test MSE:', ScienceScore[1])
 
-# Saving the trained Science Neural Net 
-ScienceModel.save('Science_NN.h5')
+print('Science Model Test on Train MSE:', ScienceTrainScore[1])
+
+### Saving the trained Science Neural Net 
+if (ArchSampleType=='MedInstr'):
+    print('Saving the Science Model for Uniform type Architectures')
+    ScienceModel.save('Science_NN_uniform.h5')
+elif (ArchSampleType=='LowInstr'):
+    print('Saving the Science Model for LessInstruments type Architectures')
+    ScienceModel.save('Science_NN_lessinstruments.h5')
 
 ### Training and testing the Cost Neural Net
 print('Building Cost Model....')
 CostModel = Sequential()
-CostModel.add(Dense(300, input_dim=60))
+CostModel.add(Dense(100, input_dim=60))
 CostModel.add(Activation('relu'))
-CostModel.add(Dropout(0.1))
-#CostModel.add(Dense(500))
-#CostModel.add(Activation('relu'))
-#CostModel.add(Dropout(0.1))
+CostModel.add(Dropout(0.3))
+CostModel.add(Dense(75))
+CostModel.add(Activation('relu'))
+CostModel.add(Dropout(0.3))
+CostModel.add(Dense(50))
+CostModel.add(Activation('relu'))
+CostModel.add(Dropout(0.3))
 CostModel.add(Dense(1))
 
 CostModel.compile(loss='mean_squared_error', optimizer='adam', metrics=['mse'])
@@ -112,15 +149,25 @@ CostHistory = CostModel.fit(archArray_train, cost_train, batch_size=batch_size, 
 
 CostScore = CostModel.evaluate(archArray_test, cost_test, batch_size=batch_size)
 
+CostTrainScore = CostModel.evaluate(archArray_train, cost_train, batch_size=batch_size)
+
 plt.figure(2)
-plt.plot(CostHistory.history['mse'])
+plt.plot(CostHistory.history['mse'], label='train')
+plt.plot(CostHistory.history['val_mse'], label='val')
 plt.xlabel('Epoch')
-plt.ylabel('Mean_squared_error')
-plt.title('Mean_Squared_Error for Cost Neural Net Training')
+plt.ylabel('Mean Squared Error')
+plt.title('Mean Squared Error for Cost Neural Net Training')
+plt.legend(loc='upper right')
 plt.show()
 
-print('Cost Model Test Score:', CostScore[0])
-print('Cost Model Test Accuracy:', CostScore[1])
+print('Cost Model Test MSE:', CostScore[1])
 
-# Saving the trained Cost Neural Net 
-CostModel.save('Cost_NN.h5')
+print('Cost Model Test on Train MSE:', CostTrainScore[1])
+
+### Saving the trained Cost Neural Net 
+#if (ArchSampleType=='MedInstr'):
+    #print('Saving the Cost Model for Uniform type Architectures')
+    #CostModel.save('Cost_NN_medInstr.h5')
+#elif (ArchSampleType=='LowInstr'):
+    #print('Saving the Cost Model for LessInstruments type Architectures')
+    #CostModel.save('Cost_NN_lowInstr.h5')

@@ -4,17 +4,17 @@
 @author: roshan94
 """
 from keras.models import load_model
-import numpy as np # only needed for testing
+import numpy as np 
 
 # arch_listbool = ""
 
 def NeuralNetScienceAndCost (arch_listbool):
 
-    # Loading the trained Science and Cost Models from the h5 files
-    ScienceModel = load_model('Science_NN.h5')
-    CostModel = load_model('Cost_NN.h5')
+    ### Loading the trained Science and Cost Models from the h5 files
+    ScienceModel = load_model('Science_NN_uniform.h5')
+    CostModel = load_model('Cost_NN_uniform.h5')
 
-    #print(arch_listbool)
+    # print(arch_listbool)
     np_list = np.array(arch_listbool)
     np_list= np_list.reshape((1,60))
 
@@ -23,7 +23,7 @@ def NeuralNetScienceAndCost (arch_listbool):
     
     return arch_listbool, science, cost
 
-# Testing
+### Testing
 # arch_test = "111100001100011100000000011100000011100011000000000000000011"
 
 # archArray_test = np.zeros([1,60])
