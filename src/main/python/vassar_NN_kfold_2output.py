@@ -155,7 +155,7 @@ elif (ArchSampleType=='LowInstr'):
         instr_num_writer.writerow(['Cost Training', str(np.amax(cost_train_num))])
         instr_num_writer.writerow(['Science Testing', str(np.amax(science_test_num))])
         instr_num_writer.writerow(['Cost Testing', str(np.amax(cost_test_num))])
-print('Normalizatioin constants saved')
+print('Normalization constants saved')
 
 ### k-fold cross validation
 n_folds = 10
