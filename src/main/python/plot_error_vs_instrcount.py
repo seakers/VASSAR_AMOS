@@ -8,7 +8,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 ### Read csv file
-with open('C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_binomial2\\bestNN_kfold_predictions_medinstr.csv',newline='')as csvfile:
+ArchSampletype = 'MedInstr_2op'
+
+if (ArchSampletype == 'MedInstr'):
+    csv_location = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_binomial2\\bestNN_kfold_predictions_medinstr.csv' 
+elif (ArchSampletype == 'LowInstr'):
+    csv_location = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_binomial2\\bestNN_kfold_predictions_medinstr.csv' 
+elif (ArchSampletype == 'MedInstr_2op'):
+    csv_location = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_binomial2_2op\\bestNN_kfold_predictions_2op_medinstr.csv' 
+elif (ArchSampletype == 'LowInstr_2op'):
+    csv_location = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_binomial2_2op\\bestNN_kfold_predictions_2op_medinstr.csv' 
+   
+with open(csv_location,newline='')as csvfile:
            data = [row for row in csv.reader(csvfile)]
            architectures = ["" for x in range(len(data))]
            true_science_vals = ["" for x in range(len(data))]
@@ -62,19 +73,34 @@ plt.ylabel('% Error')
 plt.title('Percentage Error for Cost Model')
 plt.show()
 
-### Find number of architectures with science error greater than a threshold
-percent_threshold = 50
-arch_count = 0
+### Find number of architectures with science and cost error less than a threshold
+percent_threshold = 20
+science_arch_count = 0
+cost_arch_count = 0
+science_err_archs = []
+cost_err_archs = []
 for i in range(len(true_science_floats)):
-    if (science_abs_error[i] >= percent_threshold):
-        arch_count += 1
+    archArray_int = map(int, archArray[i])
+    if (science_abs_error[i] <= percent_threshold):
+        science_arch_count += 1
+        science_err_archs.append(list(archArray_int))
+    if (cost_abs_error[i] <= percent_threshold):
+        cost_arch_count += 1
+        cost_err_archs.append(list(archArray_int))
         
-print(str(arch_count) + ' architectures out of ' + str(len(true_science_floats)) + ' have science error percentage greater than or equal to ' + str(percent_threshold) + ' %')
+print(str(science_arch_count) + ' architectures out of ' + str(len(true_science_floats)) + ' have science error percentage less than or equal to ' + str(percent_threshold) + ' %')
+print(str(cost_arch_count) + ' architectures out of ' + str(len(true_science_floats)) + ' have cost error percentage less than or equal to ' + str(percent_threshold) + ' %')
 
 ### Historgram of science errors
 plt.figure(3)
-plt.hist(science_abs_error)
+plt.hist(science_abs_error, bins=np.arange(min(science_abs_error),max(science_abs_error),5))
 plt.xlabel('Science %')
 plt.ylabel('Count')
 plt.title('Science Error Histogram')
+plt.show()
+plt.figure(4)
+plt.hist(cost_abs_error, bins=np.arange(min(cost_abs_error),max(cost_abs_error),5))
+plt.xlabel('Cost %')
+plt.ylabel('Count')
+plt.title('Cost Error Histogram')
 plt.show()

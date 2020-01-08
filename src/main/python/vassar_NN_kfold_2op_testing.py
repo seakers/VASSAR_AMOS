@@ -79,8 +79,8 @@ norm_const = read_norm_constants(norm_file_path)
 def denormalize(normalization_constants, science_norm_vals, cost_norm_vals):
     science_train_norm_const = normalization_constants[0]
     cost_train_norm_const = normalization_constants[1]
-    science_denorm_vals = science_norm_vals*science_train_norm_const
-    cost_denorm_vals = cost_norm_vals*cost_train_norm_const
+    science_denorm_vals = np.asarray(science_norm_vals)*science_train_norm_const
+    cost_denorm_vals = np.asarray(cost_norm_vals)*cost_train_norm_const
     return science_denorm_vals, cost_denorm_vals
 
 ### Defining Neural Net evaluation batch size
@@ -99,7 +99,7 @@ def NN_evaluation(archs, science, cost, num_batch):
             archs_array[x][y] = int(current_arch[y])
         science_val = float(science[x])
         cost_val = float(cost[x])
-        scores_array[x,:] = [science_val, cost_val]
+        scores_array[x] = [science_val, cost_val]
     ### Evaluate the Neural Net using available data  
     metric_vals = Model.evaluate(archs_array, scores_array, batch_size=num_batch, verbose=1)
     return metric_vals
@@ -123,8 +123,8 @@ def normalize(vec):
     return vec_norm
 
 metrics = []
-science_met = [[0 for i in range(2)] for j in range(num_testfiles)] 
-cost_met = [[0 for i in range(2)] for j in range(num_testfiles)]
+#science_met = [[0 for i in range(2)] for j in range(num_testfiles)] 
+#cost_met = [[0 for i in range(2)] for j in range(num_testfiles)]
 #science_ref = [[] for i in range(num_testfiles)]
 #cost_ref = [[] for i in range(num_testfiles)]
 #science_pred = [[] for i in range(num_testfiles)]
@@ -157,11 +157,15 @@ for i in range(num_testfiles):
     #cost_pred_file = np.zeros([int(num_data[i])])
     science_pred_file = []
     cost_pred_file = []
-    metrics = NN_evaluation(archs_eval, science_eval, cost_eval, n_batch)
-    science_met[i] = metrics[0]
-    cost_met[i] = metrics[1]
-    print('For data from test file ' + str(i+1) + ' ,science metric = ' + str(science_met[i]) + ' and cost metric = ' + str(cost_met[i]))
-    science_pred_file, cost_pred_file = NN_prediction(archs_eval, n_batch)
+    metrics_file = NN_evaluation(archs_eval, science_eval, cost_eval, n_batch)
+    metrics.extend(metrics_file)
+    #science_met[i] = metrics[0]
+    #cost_met[i] = metrics[1]
+    print('For data from test file ' + str(i+1) + ' , metrics = ' + str(metrics_file))
+    scores_pred_file = NN_prediction(archs_eval, n_batch)
+    for scores_arch in scores_pred_file:
+        science_pred_file.append(scores_arch[0])
+        cost_pred_file.append(scores_arch[1])
     science_pred_norm.extend(science_pred_file)
     cost_pred_norm.extend(cost_pred_file)
     science_pred_denorm, cost_pred_denorm = denormalize(norm_const, science_pred_file, cost_pred_file)
@@ -170,25 +174,25 @@ for i in range(num_testfiles):
 
 #print(science_pred[0])
 #print(cost_pred[0])
-print('The evaluation metrics shown are ' + str(ScienceModel.metrics_names) + ' for the Science Neural Net and ' + str(CostModel.metrics_names) + ' for the Cost Neural Net.')
+print('The evaluation metrics shown are ' + str(Model.metrics_names))
 num_archs_total = np.sum(num_data)
 
 ### Write to csv file 
 print('Writing to csv file')
 if (ArchSampletype=='MedInstr'):
     line = 0
-    with open('bestNN_kfold_predictions_medinstr.csv', mode='w') as instr_num_file:
+    with open('bestNN_kfold_predictions_2op_medinstr.csv', mode='w') as instr_num_file:
         instr_num_writer = csv.writer(instr_num_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
         instr_num_writer.writerow(['Architecture','Reference Science','Predicted Science','Normalized Reference Science','Normalized Predicted Science','Reference Cost','Predicted Cost','Normalized Reference Cost','Normalized Predicted Cost'])
         while line < num_archs_total:
-            instr_num_writer.writerow([archs_list[line], str(science_ref[line]), str(science_pred[line][0]), str(science_ref_norm[line]), str(science_pred_norm[line][0]), str(cost_ref[line]), str(cost_pred[line][0]), str(cost_ref_norm[line]), str(cost_pred_norm[line][0])])
+            instr_num_writer.writerow([archs_list[line], str(science_ref[line]), str(science_pred[line]), str(science_ref_norm[line]), str(science_pred_norm[line]), str(cost_ref[line]), str(cost_pred[line]), str(cost_ref_norm[line]), str(cost_pred_norm[line])])
             line += 1
 elif (ArchSampletype=='LowInstr'):
     line = 0
-    with open('bestNN_kfold_predictions_lowinstr.csv', mode='w') as instr_num_file:
+    with open('bestNN_kfold_predictions_2op_lowinstr.csv', mode='w') as instr_num_file:
         instr_num_writer = csv.writer(instr_num_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
         instr_num_writer.writerow(['Architecture','Reference Science','Predicted Science','Normalized Reference Science','Normalized Predicted Science','Reference Cost','Predicted Cost','Normalized Reference Cost','Normalized Predicted Cost'])
         while line < num_archs_total:
-            instr_num_writer.writerow([archs_list[line], str(science_ref[line]), str(science_pred[line][0]), str(science_ref_norm[line]), str(science_pred_norm[line][0]), str(cost_ref[line]), str(cost_pred[line][0]), str(cost_ref_norm[line]), str(cost_pred_norm[line][0])])
+            instr_num_writer.writerow([archs_list[line], str(science_ref[line]), str(science_pred[line]), str(science_ref_norm[line]), str(science_pred_norm[line]), str(cost_ref[line]), str(cost_pred[line]), str(cost_ref_norm[line]), str(cost_pred_norm[line])])
             line += 1
 print('File Writing done')
