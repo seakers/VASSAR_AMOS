@@ -11,8 +11,9 @@ from sklearn import linear_model
 from sklearn.metrics import mean_squared_error, r2_score
 import matplotlib.pyplot as plt
 
-### Set type of data to test
+### Set type of data to test and run mode 
 ArchSampletype = 'MedInstr'
+RunMode = 'Combined' 
 
 def get_test_files(ArchSampleType):
     if(ArchSampleType=='MedInstr'):
@@ -20,39 +21,41 @@ def get_test_files(ArchSampleType):
         SModel = load_model('.\\NN_kfold_binomial2\\Science_NNkfold_medInstr.h5')
         CModel = load_model('.\\NN_kfold_binomial2\\Cost_NNkfold_medInstr.h5')
 
-        ### Finding number of csv data files for testing
-        dir_path = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\NN test data\\Incorrect Datasets\\Uniform\\'
-        n_testfiles = len([f for f in os.listdir(dir_path)if os.path.isfile(os.path.join(dir_path,f))])
-        #print(num_testfiles)
-
-        file_loc = ['' for x in range(n_testfiles)]
-        for i in range(n_testfiles):
-            file_loc[i] = dir_path + 'vassar_data_uniform_test' + str(i+1) + '.csv' 
-            #print(file_path)
-            
         norm_file_loc = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_binomial2\\normalization_constants_medinstr.csv'
         
     elif(ArchSampleType=='LowInstr'):
         ### Loading the trained Science and Cost Models from the h5 files
-        SModel = load_model('Science_NN_lowInstr.h5')
-        CModel = load_model('Cost_NN_lowInstr.h5')
-
-        ### Finding number of csv data files for testing
-        dir_path = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\NN test data\\Incorrect Datasets\\LessArchs\\'
-        n_testfiles = len([f for f in os.listdir(dir_path)if os.path.isfile(os.path.join(dir_path,f))])
-        #print(num_testfiles)
-
-        file_loc = ['' for x in range(n_testfiles)]
-        for i in range(n_testfiles):
-            file_loc[i] = dir_path + 'vassar_data_lessarchs_test' + str(i+1) + '.csv' 
-            #print(file_path)
+        SModel = load_model('.\\NN_kfold_poisson1\\Science_NNkfold_lowInstr.h5')
+        CModel = load_model('.\\NN_kfold_poisson1\\Cost_NNkfold_lowInstr.h5')
             
         norm_file_loc = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\src\\main\\python\\NN_kfold_poisson1\\normalization_constants_lowinstr.csv'
         
-    return SModel, CModel, n_testfiles, file_loc, norm_file_loc
+    ### Finding and storing csv data file locations for testing
+    dir_path_uniform = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\NN test data\\Incorrect Datasets\\Uniform\\'
+    n_testfiles_uniform = len([f for f in os.listdir(dir_path_uniform)if os.path.isfile(os.path.join(dir_path_uniform,f))])
+    #print(num_testfiles_uniform)
 
-ScienceModel, CostModel, num_testfiles, file_path, norm_file_path = get_test_files(ArchSampletype)
+    file_loc_uniform = ['' for x in range(n_testfiles_uniform)]
+    for i in range(n_testfiles_uniform):
+        file_loc_uniform[i] = dir_path_uniform + 'vassar_data_uniform_test' + str(i+1) + '.csv' 
+        #print(file_loc_uniform[i])
 
+    dir_path_lessarchs = 'C:\\SEAK Lab\\SEAK Lab Github\\VASSAR\\VASSAR_AMOS_V1\\NN test data\\Incorrect Datasets\\LessArchs\\'
+    n_testfiles_lessarchs = len([f for f in os.listdir(dir_path_lessarchs)if os.path.isfile(os.path.join(dir_path_lessarchs,f))])
+    #print(num_testfiles)
+
+    file_loc_lessarchs = ['' for x in range(n_testfiles_lessarchs)]
+    for i in range(n_testfiles_lessarchs):
+        file_loc_lessarchs[i] = dir_path_lessarchs + 'vassar_data_lessarchs_test' + str(i+1) + '.csv' 
+        #print(file_loc_lessarchs[i])
+        
+    return SModel, CModel, n_testfiles_uniform, n_testfiles_lessarchs, file_loc_uniform, file_loc_lessarchs, norm_file_loc
+
+ScienceModel, CostModel, num_testfiles_uniform, num_testfiles_lessarchs, file_path_uniform, file_path_lessarchs, norm_file_path = get_test_files(ArchSampletype)
+
+num_testfiles_all = num_testfiles_uniform + num_testfiles_lessarchs
+file_path_all = file_path_uniform + file_path_lessarchs
+    
 ### Read data from csv file and store into different arrays 
 def read_csv(file_path):
     with open(file_path,newline='') as csvfile:
@@ -124,56 +127,119 @@ def normalize(vec):
     vec_norm = vec_int/val_max
     return vec_norm
 
-metrics = []
-science_met = [[0 for i in range(2)] for j in range(num_testfiles)] 
-cost_met = [[0 for i in range(2)] for j in range(num_testfiles)]
-#science_ref = [[] for i in range(num_testfiles)]
-#cost_ref = [[] for i in range(num_testfiles)]
-#science_pred = [[] for i in range(num_testfiles)]
-#cost_pred = [[] for i in range(num_testfiles)]
-archs_list = []
-science_ref_norm = []
-science_ref = []
-science_pred_norm = []
-science_pred = []
-cost_ref_norm = []
-cost_ref = []
-cost_pred_norm = []
-cost_pred = []
-num_data = np.empty([num_testfiles])
-for i in range(num_testfiles):
-    file = file_path[i]
-    data = read_csv(file)
-    archs_eval = data[0]
-    science_eval = data[1]
-    cost_eval = data[2]
-    num_data[i] = len(archs_eval)
-    science_eval_norm = normalize(science_eval)
-    cost_eval_norm = normalize(cost_eval)
-    science_ref.extend(science_eval)
-    cost_ref.extend(cost_eval)
-    archs_list.extend(archs_eval)
-    science_ref_norm.extend(science_eval_norm)
-    cost_ref_norm.extend(cost_eval_norm)
-    #science_pred_file = np.zeros([int(num_data[i])])
-    #cost_pred_file = np.zeros([int(num_data[i])])
-    science_pred_file = []
-    cost_pred_file = []
-    metrics = NN_evaluation(archs_eval, science_eval, cost_eval, n_batch)
-    science_met[i] = metrics[0]
-    cost_met[i] = metrics[1]
-    print('For data from test file ' + str(i+1) + ' ,science metric = ' + str(science_met[i]) + ' and cost metric = ' + str(cost_met[i]))
-    science_pred_file, cost_pred_file = NN_prediction(archs_eval, n_batch)
-    science_pred_norm.extend(science_pred_file)
-    cost_pred_norm.extend(cost_pred_file)
-    science_pred_denorm, cost_pred_denorm = denormalize(norm_const, science_pred_file, cost_pred_file)
-    science_pred.extend(science_pred_denorm)
-    cost_pred.extend(cost_pred_denorm)
+def get_scores_from_files (n_files, file_paths):
+    archs_list = []
+    science_ref_norm = []
+    science_ref = []
+    cost_ref_norm = []
+    cost_ref = []
+    num_data = np.empty([n_files])
+    for i in range(n_files):
+        file = file_paths[i]
+        data = read_csv(file)
+        archs_eval = data[0]
+        science_eval = data[1]
+        cost_eval = data[2]
+        num_data[i] = len(archs_eval)
+        science_eval_norm = normalize(science_eval)
+        cost_eval_norm = normalize(cost_eval)
+        science_ref.extend(science_eval)
+        cost_ref.extend(cost_eval)
+        archs_list.extend(archs_eval)
+        science_ref_norm.extend(science_eval_norm)
+        cost_ref_norm.extend(cost_eval_norm)    
+    return archs_list, science_ref, cost_ref, science_ref_norm, cost_ref_norm 
 
-#print(science_pred[0])
-#print(cost_pred[0])
-print('The evaluation metrics shown are ' + str(ScienceModel.metrics_names) + ' for the Science Neural Net and ' + str(CostModel.metrics_names) + ' for the Cost Neural Net.')
-num_archs_total = np.sum(num_data)
+### Get score metrics from trained Neural Nets
+def get_metrics(n_files, archs_list, science_ref_norm, cost_ref_norm, num_batch):
+    metrics = []
+    #science_met = [[0 for i in range(2)] for j in range(n_files)] 
+    #cost_met = [[0 for i in range(2)] for j in range(n_files)]
+    metrics = NN_evaluation(archs_list, science_ref_norm, cost_ref_norm, num_batch)
+    science_met = metrics[0]
+    cost_met = metrics[1]
+    print('science metric = ' + str(science_met) + ' and cost metric = ' + str(cost_met))
+
+### Remove duplicates
+def remove_duplicates(archs_list, science_ref, cost_ref, science_ref_norm, cost_ref_norm):
+    print(len(archs_list))
+    print(len(science_ref_norm))
+    print(len(cost_ref_norm))
+    archs_list_unique = list(set(archs_list))
+    science_ref_unique = []
+    cost_ref_unique = []
+    science_ref_norm_unique = []
+    cost_ref_norm_unique = []
+    for i in range(len(archs_list_unique)):
+        index = archs_list.index(archs_list_unique[i])
+        #print(index)
+        science_ref_unique.append(science_ref[index])
+        cost_ref_unique.append(cost_ref[index])
+        science_ref_norm_unique.append(science_ref_norm[index])
+        cost_ref_norm_unique.append(cost_ref_norm[index])
+    print(len(archs_list_unique))
+    print(len(science_ref_norm_unique))
+    print(len(cost_ref_norm_unique))
+    return archs_list_unique, science_ref_unique, cost_ref_unique, science_ref_norm_unique, cost_ref_norm_unique
+
+### Get predicted scores from trained Neural Nets   
+if (RunMode == 'Separate'):
+    archs_med, science_true_med, cost_true_med, science_true_norm_med, cost_true_norm_med = get_scores_from_files(num_testfiles_uniform, file_path_uniform)
+    archs_low, science_true_low, cost_true_low, science_true_norm_low, cost_true_norm_low = get_scores_from_files(num_testfiles_lessarchs, file_path_lessarchs)
+    
+    get_metrics(num_testfiles_uniform, archs_med, science_true_norm_med, cost_true_norm_med, n_batch)
+    get_metrics(num_testfiles_lessarchs, archs_low, science_true_norm_low, cost_true_norm_low, n_batch)
+
+    archs_med_unique, science_true_med_unique, cost_true_med_unique, science_true_norm_med_unique, cost_true_norm_med_unique = remove_duplicates(archs_med, science_true_med, cost_true_med, science_true_norm_med, cost_true_norm_med) 
+    archs_low_unique, science_true_low_unique, cost_true_low_unique, science_true_norm_low_unique, cost_true_norm_low_unique = remove_duplicates(archs_low, science_true_low, cost_true_low, science_true_norm_low, cost_true_norm_low) 
+    
+    science_pred_norm_med = []
+    cost_pred_norm_med = []
+    science_pred_norm_low = []
+    cost_pred_norm_low = []
+    science_pred_norm_med, cost_pred_norm_med = NN_prediction(archs_med_unique, n_batch)
+    science_pred_norm_low, cost_pred_norm_low = NN_prediction(archs_low_unique, n_batch)
+    
+    science_pred_denorm_med, cost_pred_denorm_med = denormalize(norm_const, science_pred_norm_med, cost_pred_norm_med)
+    science_pred_denorm_low, cost_pred_denorm_low = denormalize(norm_const, science_pred_norm_low, cost_pred_norm_low)
+    science_pred_med = science_pred_denorm_med
+    cost_pred_med = cost_pred_denorm_med
+    science_pred_low = science_pred_denorm_low
+    cost_pred_low = cost_pred_denorm_low
+    #print(science_pred_med[0])
+    #print(cost_pred_med[0])
+    print('The evaluation metrics shown are ' + str(ScienceModel.metrics_names) + ' for the Science Neural Net and ' + str(CostModel.metrics_names) + ' for the Cost Neural Net.')
+    num_archs_total = len(archs_med_unique) + len(archs_low_unique)
+    
+    # Combine the architectures and scores from the two datasets to write to csv file
+    archs_unique = archs_med_unique + archs_low_unique
+    science_true_unique = science_true_med_unique + science_true_low_unique 
+    cost_true_unique = cost_true_med_unique + cost_true_low_unique 
+    science_true_norm_unique = science_true_norm_med_unique + science_true_norm_low_unique 
+    cost_true_norm_unique = cost_true_norm_med_unique + cost_true_norm_low_unique 
+    science_pred = list(science_pred_med) + list(science_pred_low)
+    cost_pred = list(cost_pred_med) + list(cost_pred_low)
+    science_pred_norm = list(science_pred_norm_med) + list(science_pred_norm_low)
+    cost_pred_norm = list(cost_pred_norm_med) + list(cost_pred_norm_low)
+    
+elif (RunMode == 'Combined'):
+    archs, science_true, cost_true, science_true_norm, cost_true_norm = get_scores_from_files(num_testfiles_all, file_path_all)
+
+    get_metrics(num_testfiles_all, archs, science_true_norm, cost_true_norm, n_batch)
+
+    archs_unique, science_true_unique, cost_true_unique, science_true_norm_unique, cost_true_norm_unique = remove_duplicates(archs, science_true, cost_true, science_true_norm, cost_true_norm) 
+    
+    science_pred_norm = []
+    cost_pred_norm = []
+    science_pred_norm, cost_pred_norm = NN_prediction(archs_unique, n_batch)
+    
+    science_pred_denorm, cost_pred_denorm = denormalize(norm_const, science_pred_norm, cost_pred_norm)
+    science_pred = science_pred_denorm
+    cost_pred = cost_pred_denorm
+    #print(science_pred[0])
+    #print(cost_pred[0])
+    print('The evaluation metrics shown are ' + str(ScienceModel.metrics_names) + ' for the Science Neural Net and ' + str(CostModel.metrics_names) + ' for the Cost Neural Net.')
+    num_archs_total = len(archs_unique)
 
 ### Write to csv file 
 print('Writing to csv file')
@@ -183,7 +249,7 @@ if (ArchSampletype=='MedInstr'):
         instr_num_writer = csv.writer(instr_num_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
         instr_num_writer.writerow(['Architecture','Reference Science','Predicted Science','Normalized Reference Science','Normalized Predicted Science','Reference Cost','Predicted Cost','Normalized Reference Cost','Normalized Predicted Cost'])
         while line < num_archs_total:
-            instr_num_writer.writerow([archs_list[line], str(science_ref[line]), str(science_pred[line][0]), str(science_ref_norm[line]), str(science_pred_norm[line][0]), str(cost_ref[line]), str(cost_pred[line][0]), str(cost_ref_norm[line]), str(cost_pred_norm[line][0])])
+            instr_num_writer.writerow([archs_unique[line], str(science_true_unique[line]), str(science_pred[line][0]), str(science_true_norm_unique[line]), str(science_pred_norm[line][0]), str(cost_true_unique[line]), str(cost_pred[line][0]), str(cost_true_norm_unique[line]), str(cost_pred_norm[line][0])])
             line += 1
 elif (ArchSampletype=='LowInstr'):
     line = 0
@@ -191,7 +257,7 @@ elif (ArchSampletype=='LowInstr'):
         instr_num_writer = csv.writer(instr_num_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
         instr_num_writer.writerow(['Architecture','Reference Science','Predicted Science','Normalized Reference Science','Normalized Predicted Science','Reference Cost','Predicted Cost','Normalized Reference Cost','Normalized Predicted Cost'])
         while line < num_archs_total:
-            instr_num_writer.writerow([archs_list[line], str(science_ref[line]), str(science_pred[line][0]), str(science_ref_norm[line]), str(science_pred_norm[line][0]), str(cost_ref[line]), str(cost_pred[line][0]), str(cost_ref_norm[line]), str(cost_pred_norm[line][0])])
+            instr_num_writer.writerow([archs_unique[line], str(science_true_unique[line]), str(science_pred[line][0]), str(science_true_norm_unique[line]), str(science_pred_norm[line][0]), str(cost_true_unique[line]), str(cost_pred[line][0]), str(cost_true_norm_unique[line]), str(cost_pred_norm[line][0])])
             line += 1
 print('File Writing done')
 
